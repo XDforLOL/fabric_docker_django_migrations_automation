@@ -1,9 +1,12 @@
 import sys
+import os
 from getpass import getpass
 from fabric import Connection, Config
 
+import fabric
 
-class FabricConnectionSetup:
+
+class FabricConnectionSetup():
 
     def __init__(self, cmd) -> None:
         if cmd == 'start':
@@ -72,7 +75,8 @@ class FabricConnectionSetup:
             ]
 
             for environment in exported_environments:
-                self.connection_host.run(f"""echo "export {environment}" >> ~/.bashrc""")
+                self.connection_host.run(f"""echo "{environment}" >> 
+                ./django_project/crm__showcase/django_retail_crm/.env""")
         return True
 
     def pull_django_project_migrations(self):
@@ -82,12 +86,13 @@ class FabricConnectionSetup:
         if 'not installed' in git_check.stdout:
             self.connection_host.run('sudo apt install git-all')
 
-        elif self.set_django_environment_vars():
             print('--- Creating a new dir, attempting to pull project ---')
 
             self.connection_host.run(
                 f"mkdir django_project && cd ./django_project/ && git clone {input('insert: github_URL')}"
             )
+            self.connection_host.run("cd ./django_project/crm__showcase/django_retail_crm && touch .env")
+            self.set_django_environment_vars()
 
             print('Attempting to install pip requirements.txt')
 
@@ -100,27 +105,25 @@ class FabricConnectionSetup:
 
             print('--- Attempting to makemigrations, and migrate  ---')
 
-            anisble_check_and_run_playbook()
-
-            print('DONE!')
-
 
 def anisble_check_and_run_playbook():
-    local_connections = Connection('host')
-
-    local_connections.run('ansible --version')
-    if 'not installed' in local_connections.run('ansible --version').stdout:
-        local_connections.run("sudo apt-get update")
-        local_connections.run(
+    ansible_check = os.popen('ansible --version')
+    if 'not installed' in ansible_check.read():
+        os.popen("sudo apt-get update")
+        os.popen(
             "sudo apt install software-properties-common && "
             "sudo apt-add-repository --yes --update ppa:ansible/ansible && "
             "sudo apt install ansible"
         )
-        local_connections.run('cd ./ansible-main && ansible-playbook -i HOSTS -k ./playbook.yml')
-
+        run_playbook = os.popen('cd ./ansible-main && ansible-playbook -i HOSTS -k ./playbook.yml', 'w')
+        run_playbook.write(getpass('Sudo pass: '))
+        print('DONE!')
     else:
-        local_connections.run('cd ./ansible-main && ansible-playbook -i HOSTS -k ./playbook.yml')
+        run_playbook = os.popen('cd ./ansible-main && ansible-playbook -i HOSTS -k ./playbook.yml', 'w')
+        run_playbook.write(getpass('Sudo pass: '))
+        print('DONE!')
 
 
 if __name__ == "__main__":
     FabricConnectionSetup('start').pull_django_project_migrations()
+    anisble_check_and_run_playbook()
