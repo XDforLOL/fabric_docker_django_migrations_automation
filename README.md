@@ -8,7 +8,7 @@ A fabric Ansible script for automating the setup of a docker container from loca
 - knowladge in unix oprating systems
 - ansible playbook 
 - docker 
-- and django 
+- django 
 - git
 ## Description
 
