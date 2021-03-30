@@ -43,12 +43,12 @@ class FabricConnectionSetup():
         if self.docker_check():
             print('--- Creating variables for OS.environment ---')
 
-            self.DB_NAME = input('insert: DB_name')
-            self.DB_SECRET = getpass('insert: mysecretpassword')
-            self.DB_USER = input('insert: DB_USER')
-            self.DB_HOST = input('insert: Host name or IP')
-            self.SECRET_KEY = getpass('insert: django_secret')
-            self.DB_PORT = input('port:port')
+            self.DB_NAME = input('insert DB_name: ')
+            self.DB_SECRET = getpass('insert mysecretpassword: ')
+            self.DB_USER = input('insert DB_USER: ')
+            self.DB_HOST = input('insert Host name or IP: ')
+            self.SECRET_KEY = getpass('insert django_secret: ')
+            self.DB_PORT = input('port:port ')
 
             print('--- Creating new PSQL docker container ---')
 
@@ -73,10 +73,18 @@ class FabricConnectionSetup():
                 f"DJANGO_SECRET_KEY='{self.SECRET_KEY}'",
                 f"DB_PORT='{to_port}'"
             ]
+            print('--- Creating a new dir, attempting to pull project ---')
+
+            self.connection_host.run('mkdir django_project')
+            self.connection_host.run(
+                f"cd ./django_project/ && git clone {input('insert: github_URL')}"
+            )
+            self.connection_host.run("cd ./django_project/crm__showcase/django_retail_crm/ && touch .env")
 
             for environment in exported_environments:
-                self.connection_host.run(f"""echo "{environment}" >> 
-                ./django_project/crm__showcase/django_retail_crm/.env""")
+                self.connection_host.run(f"""cd ./django_project/crm__showcase/django_retail_crm/ && 
+                echo "{environment}" >> .env""")
+            
         return True
 
     def pull_django_project_migrations(self):
@@ -86,13 +94,7 @@ class FabricConnectionSetup():
         if 'not installed' in git_check.stdout:
             self.connection_host.run('sudo apt install git-all')
 
-            print('--- Creating a new dir, attempting to pull project ---')
-
-            self.connection_host.run(
-                f"mkdir django_project && cd ./django_project/ && git clone {input('insert: github_URL')}"
-            )
-            self.connection_host.run("cd ./django_project/crm__showcase/django_retail_crm && touch .env")
-            self.set_django_environment_vars()
+        elif self.set_django_environment_vars():
 
             print('Attempting to install pip requirements.txt')
 
@@ -104,6 +106,7 @@ class FabricConnectionSetup():
             )
 
             print('--- Attempting to makemigrations, and migrate  ---')
+            anisble_check_and_run_playbook()
 
 
 def anisble_check_and_run_playbook():
@@ -116,14 +119,14 @@ def anisble_check_and_run_playbook():
             "sudo apt install ansible"
         )
         run_playbook = os.popen('cd ./ansible-main && ansible-playbook -i HOSTS -k ./playbook.yml', 'w')
-        run_playbook.write(getpass('Sudo pass: '))
+        run_playbook.write(input('Sudo pass: '))
         print('DONE!')
     else:
         run_playbook = os.popen('cd ./ansible-main && ansible-playbook -i HOSTS -k ./playbook.yml', 'w')
-        run_playbook.write(getpass('Sudo pass: '))
+        run_playbook.write(input('Sudo pass: '))
         print('DONE!')
 
 
 if __name__ == "__main__":
     FabricConnectionSetup('start').pull_django_project_migrations()
-    anisble_check_and_run_playbook()
+
