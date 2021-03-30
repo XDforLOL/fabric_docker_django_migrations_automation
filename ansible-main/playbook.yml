@@ -1,0 +1,32 @@
+---
+- become: true
+  hosts: all
+  tasks:
+    - name: Venv activing
+      pip:
+        virtualenv: /home/pi/django_project/venv
+        requirements: /home/pi/django_project/crm__showcase/requirements.txt
+
+    - name: Creatins schemas with Manage.py makemigrations crm_retail
+      command: /home/pi/django_project/venv/bin/python3 /home/pi/django_project/crm__showcase/manage.py makemigrations crm_retail
+      register: result
+
+    - name: Print return information from the previous task
+      ansible.builtin.debug:
+        var: result
+
+    - name: Creating schemas with Manage.py makemigrations prodcuts_shopping_cart
+      command: /home/pi/django_project/venv/bin/python3 /home/pi/django_project/crm__showcase/manage.py makemigrations products_shopping_cart
+      register: result
+
+    - name: Print return information from the previous task
+      ansible.builtin.debug:
+        var: result
+
+    - name: Migrate django app
+      command: /home/pi/django_project/venv/bin/python3 /home/pi/django_project/crm__showcase/manage.py migrate
+      register: result
+
+    - name: Print return information from the previous task
+      ansible.builtin.debug:
+        var: result
